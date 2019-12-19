@@ -1,0 +1,108 @@
+Sub entry_point()
+
+    Calculate
+    
+    Application.Calculation = xlCalculationManual
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    
+    Dim COB As Date
+    Dim SourcePath_1 As String, SourceFile_1 As String
+    Dim SourcePath_2 As String, SourceFile_2 As String
+    Dim dest_sheet As String
+    Dim objFSO As Object
+    Dim last_row As Integer
+        
+    'Inputs parameters
+    COB = ThisWorkbook.Sheets("Index").Range("cob")
+    SourcePath_1 = Environ$("temp") & "\"
+    SourceFile_1 = "SourceFile_1.csv"
+    Set objFSO = CreateObject("Scripting.FileSystemObject")
+    
+
+    SQL_where = "WHERE COBDate IN ('" & Format(COB, "dd mmm yyyy") & "','" & Format(comp_cob, "dd mmm yyyy") & "')"
+        
+    '**** FILE CONFIG ***********
+    SourcePath_2 = "\\server\SourcePath_2\"
+    SourceFile_2 = "SourceFile_2.csv"
+    
+    ' Copy file to temp location: First parameter: original location\file : Second parameter: new location\file
+    objFSO.CopyFile SourcePath_2 & SourceFile_2, SourcePath_1 & SourceFile_1
+    
+    
+        
+    '**** QUERY DATA - from large csv file just copied ***********
+    dest_sheet = "dest"
+    'Clear existing data
+    ThisWorkbook.Sheets(dest_sheet).Range("A2:AN100000").ClearContents
+    
+    Call sbADO(SourcePath_1, SourceFile_1, dest_sheet)
+        
+       
+    'Delete the temporary files in env location
+    Kill SourcePath & SourceFileEU
+    Set objFSO = Nothing
+
+
+    'UnSpeed up process
+    Worksheets("Index").Activate
+    Application.Calculation = xlCalculationAutomatic
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    
+    ThisWorkbook.RefreshAll
+    Calculate
+    
+    MsgBox ("Done")
+
+End Sub
+
+
+
+Sub sbADO(DBPath As String, SourceFile As String, dest_sheet As String)
+
+    ' Ensure these reference libraries are turned on
+    ' Microsoft ActiveX Data Objects 6.1 Library
+    ' Microsoft ActiveX Data Objects RecordSet 6.0 Library
+    
+    Dim sSQLQry As String
+    Dim ReturnArray
+    
+    Dim conn As New ADODB.Connection
+    Dim mrs As New ADODB.Recordset
+    
+    Dim sconnect As String
+    
+    'Last Row containing data
+    last_row = ThisWorkbook.Sheets(dest_sheet).Range("E" & Rows.Count).End(xlUp).Row
+    last_row = Application.WorksheetFunction.max(last_row, 8)
+
+    
+    sconnect = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" & DBPath & ";Extended Properties='text;HDR=YES;FMT=Delimited';"
+    
+    conn.Open sconnect
+    
+        sSQLSting = "SELECT * From " & SourceFile
+        
+        mrs.Open sSQLSting, conn
+            '=>Load the Data into an array
+            'ReturnArray = mrs.GetRows
+                    ''OR''
+            '=>Paste the data into a sheet
+            ThisWorkbook.Sheets(dest_sheet).Range("A2").CopyFromRecordset mrs
+          
+        'Close Recordset
+        mrs.Close
+    
+    conn.Close
+
+
+    '**** INSERT CALCULATION COLUMN AT THE END ***********
+    'Last Row containing data
+    last_row = ThisWorkbook.Sheets(dest_sheet).Range("E" & Rows.Count).End(xlUp).Row
+    last_row = Application.WorksheetFunction.max(last_row, 8)
+    
+    ThisWorkbook.Sheets(dest_sheet).Range("AM2:AM" & last_row).Formula = "=IFERROR(Z2*X2,0)"
+
+
+End Sub
