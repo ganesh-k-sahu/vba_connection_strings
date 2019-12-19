@@ -1,0 +1,31 @@
+Sub testrunSQLQueryForCSV()
+    ' https://www.connectionstrings.com/textfile/
+    ' https://stackoverflow.com/questions/7315957/adodb-connection-string-for-csv
+    
+    Dim arrayTest
+    arrayTest = runSQLQueryForCSV("C:\xxx\yyyy\", "SELECT * FROM mycsvfile.csv")
+
+    'NOTE: for CSV the Data Source reference is to the directory and the csv file is similar
+    'to one "worksheet" in an excel file and is simply referenced in the SQL statement
+End Sub
+
+
+Public Function runSQLQueryForCSV(fileDirPath As String, SQLStatement As String)
+
+    Dim Conn As New ADODB.Connection
+    Dim RecSet As New ADODB.Recordset
+
+    With Conn
+       .Provider = "Microsoft.ACE.OLEDB.16.0"  'Can use many providers, but this is the latest and it works with csv files also
+       .ConnectionString = "Data Source=" & fileDirPath & ";Extended Properties='text'"
+    End With
+
+    Conn.Open
+
+    RecSet.Open SQLStatement, Conn
+    runSQLQueryForCSV = RecSet.GetRows()
+
+    Conn.Close
+    Set RecSet = Nothing
+    Set Conn = Nothing
+End Function
