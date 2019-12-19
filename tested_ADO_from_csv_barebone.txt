@@ -1,0 +1,36 @@
+Sub sbADO()
+
+' Ensure these reference libraries are turned on
+' Microsoft ActiveX Data Objects 6.1 Library
+' Microsoft ActiveX Data Objects RecordSet 6.0 Library
+
+Dim sSQLQry As String
+Dim ReturnArray
+
+Dim Conn As New ADODB.Connection
+Dim mrs As New ADODB.Recordset
+
+Dim DBPath As String, sconnect As String
+
+DBPath = "\\server\processed_data\YYYY-MM-DD\"
+
+sconnect = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" & DBPath & ";Extended Properties='text;HDR=YES;FMT=Delimited';"
+
+
+Conn.Open sconnect
+    
+    sSQLSting = "SELECT * From Greeks_YYYYMMDD.csv"
+    
+    mrs.Open sSQLSting, Conn
+        '=>Load the Data into an array
+        'ReturnArray = mrs.GetRows
+                ''OR''
+        '=>Paste the data into a sheet
+        ActiveSheet.Range("A2").CopyFromRecordset mrs
+      
+    'Close Recordset
+    mrs.Close
+
+Conn.Close
+
+End Sub
